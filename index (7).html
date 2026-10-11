@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Language Learning App</title>
+<style>
+:root{--bg:#f4f5fb;--card:#fff;--text:#1f2430;--muted:#6b7280;--accent:#4f46e5;--on-accent:#fff;--border:#e3e5ee;--ok:#059669;--okbg:#ecfdf5;--bad:#dc2626;--badbg:#fef2f2;--track:#e8eaf3}
+@media (prefers-color-scheme:dark){:root{--bg:#12141b;--card:#1c1f2a;--text:#eef0f6;--muted:#9aa0b0;--accent:#818cf8;--on-accent:#12141b;--border:#2d3140;--ok:#34d399;--okbg:#12302a;--bad:#f87171;--badbg:#3a1b1b;--track:#2a2e3d}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;padding:20px 14px;display:flex;justify-content:center}
+.app{width:100%;max-width:560px}
+h1{font-size:1.5rem;margin:0 0 4px}
+.sub{color:var(--muted);margin:0 0 16px;font-size:.95rem}
+select{width:100%;font:inherit;padding:10px;border-radius:10px;border:1px solid var(--border);background:var(--card);color:var(--text);margin-bottom:12px}
+button{font:inherit;cursor:pointer;border-radius:10px;border:1px solid var(--border);background:var(--card);color:var(--text);padding:10px 14px}
+button:hover:not(:disabled){border-color:var(--accent)}
+button:disabled{opacity:.4;cursor:not-allowed}
+button.primary{background:var(--accent);color:var(--on-accent);border-color:var(--accent);font-weight:600}
+.tabs,.chips{display:flex;gap:8px;margin-bottom:12px}
+.tabs button,.chips button{flex:1}
+.tabs button.on{background:var(--accent);color:var(--on-accent);border-color:var(--accent);font-weight:600}
+.chips button{font-size:.85rem;padding:7px}
+.chips button.on{border-color:var(--accent);color:var(--accent);font-weight:600}
+.card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:24px 20px;margin-bottom:14px}
+.label{font-size:.75rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:8px}
+.word{font-size:2rem;font-weight:700;word-break:break-word}
+.pron{color:var(--muted);margin:6px 0 12px;font-style:italic}
+.tr{margin-top:14px;padding:12px 14px;border-radius:10px;background:var(--okbg);color:var(--ok);font-size:1.1rem}
+.tip{margin-top:8px;font-size:.9rem;color:var(--muted)}
+.row{display:flex;gap:10px;margin-bottom:14px}
+.row>button{flex:1}
+.bar{height:6px;background:var(--track);border-radius:3px;overflow:hidden;margin-bottom:8px}
+.bar>div{height:100%;background:var(--accent);transition:width .25s}
+.count{font-size:.85rem;color:var(--muted);margin-bottom:10px}
+.opt{display:block;width:100%;text-align:left;margin-top:8px}
+.opt.right{background:var(--okbg);border-color:var(--ok);color:var(--ok)}
+.opt.wrong{background:var(--badbg);border-color:var(--bad);color:var(--bad)}
+.big{font-size:2.4rem;font-weight:700;text-align:center;margin:8px 0}
+.center{text-align:center}
+.stat{display:flex;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--border);font-size:.95rem}
+.stat:last-child{border-bottom:none}
+.muted{color:var(--muted)}
+</style>
+</head>
+<body>
+<div class="app">
+  <h1>🌍 Language Learning</h1>
+  <p class="sub">Learn words, phrases and grammar. Then test yourself.</p>
+  <select id="lang" aria-label="Choose language"></select>
+  <div class="tabs" id="tabs"></div>
+  <div class="chips" id="chips"></div>
+  <div id="view"></div>
+</div>
+
+<script>
+// Each item: [word/sentence, English meaning, pronunciation, grammar tip (optional)]
+const DATA = {
+  Spanish: {code:"es-ES", vocab:[
+    ["Hola","Hello","OH-lah"],["Gracias","Thank you","GRAH-see-ahs"],["Agua","Water","AH-gwah"],["Amigo","Friend","ah-MEE-go"],
+    ["Comida","Food","ko-MEE-dah"],["Casa","House","KAH-sah"],["Libro","Book","LEE-bro"],["Gato","Cat","GAH-toh"]],
+   phrases:[["Buenos días","Good morning","BWEH-nos DEE-ahs"],["¿Cómo estás?","How are you?","KOH-mo es-TAHS"],
+    ["Me llamo...","My name is...","meh YAH-mo"],["¿Dónde está el baño?","Where is the bathroom?","DOHN-deh es-TAH el BAH-nyo"],
+    ["No entiendo","I don't understand","no en-tee-EN-do"]],
+   grammar:[["Soy estudiante","I am a student","soy es-too-dee-AHN-teh","Use “ser” (soy) for identity and permanent traits."],
+    ["Estoy cansado","I am tired","es-TOY kahn-SAH-do","Use “estar” (estoy) for feelings and temporary states."],
+    ["El gato","The cat","el GAH-toh","Masculine nouns use “el”."],["La casa","The house","lah KAH-sah","Feminine nouns use “la”."]]},
+  French: {code:"fr-FR", vocab:[
+    ["Bonjour","Hello","bon-ZHOOR"],["Merci","Thank you","mehr-SEE"],["Eau","Water","oh"],["Ami","Friend","ah-MEE"],
+    ["Nourriture","Food","noo-ree-TOOR"],["Maison","House","meh-ZOHN"],["Livre","Book","LEE-vruh"],["Chat","Cat","shah"]],
+   phrases:[["Comment ça va ?","How are you?","koh-mahn sah VAH"],["Je m'appelle...","My name is...","zhuh mah-PEL"],
+    ["Où sont les toilettes ?","Where is the bathroom?","oo sohn lay twah-LET"],["Je ne comprends pas","I don't understand","zhuh nuh kohm-PRAHN pah"],
+    ["S'il vous plaît","Please","seel voo PLEH"]],
+   grammar:[["Je suis étudiant","I am a student","zhuh swee zay-too-dee-AHN","“Être” means “to be”: je suis = I am."],
+    ["J'ai faim","I am hungry","zhay FAHN","French uses “avoir” (to have): literally “I have hunger”."],
+    ["Le chat","The cat","luh shah","Masculine nouns use “le”."],["La maison","The house","lah meh-ZOHN","Feminine nouns use “la”."]]},
+  Hindi: {code:"hi-IN", vocab:[
+    ["नमस्ते","Hello","namaste"],["धन्यवाद","Thank you","dhanyavaad"],["पानी","Water","paani"],["दोस्त","Friend","dost"],
+    ["खाना","Food","khaana"],["घर","House","ghar"],["किताब","Book","kitaab"],["बिल्ली","Cat","billee"]],
+   phrases:[["आप कैसे हैं?","How are you?","aap kaise hain"],["मेरा नाम ... है","My name is ...","mera naam ... hai"],
+    ["शौचालय कहाँ है?","Where is the bathroom?","shauchaalay kahaan hai"],["मुझे समझ नहीं आया","I don't understand","mujhe samajh nahin aaya"],
+    ["कृपया","Please","kripayaa"]],
+   grammar:[["मैं छात्र हूँ","I am a student","main chhaatra hoon","“हूँ” (hoon) is the verb “am”, used with “मैं”."],
+    ["यह मेरा घर है","This is my house","yah mera ghar hai","The verb comes at the end of the sentence; “है” = is."],
+    ["मुझे पानी चाहिए","I need water","mujhe paani chaahiye","“चाहिए” expresses need or want."],
+    ["वह अच्छा है","He is good","vah achchha hai","Adjectives change with gender: अच्छा (m), अच्छी (f)."]]},
+  English: {code:"en-US", vocab:[
+    ["Friend","A person you like and trust","frend"],["Happy","Feeling joy or pleasure","HAP-ee"],["Water","A clear liquid that we drink","WAW-ter"],
+    ["Book","Pages with words that you read","buk"],["House","A building where people live","hows"],["Hungry","Wanting to eat food","HUNG-gree"],
+    ["Beautiful","Very pleasing to look at","BYOO-tih-ful"],["Learn","To gain new knowledge or a new skill","lurn"]],
+   phrases:[["Good morning","A greeting used in the morning","gud MOR-ning"],["How are you?","A question asking about someone's health or mood","how ar yoo"],
+    ["Nice to meet you","Said when you meet someone for the first time","nys too meet yoo"],["Excuse me","Said to get attention or to apologise politely","ik-SKYOOZ mee"],
+    ["Could you help me?","A polite request for help","kud yoo help mee"],["See you later","A friendly way to say goodbye","see yoo LAY-ter"]],
+   grammar:[["She plays football","Present simple: add -s for he, she or it","shee playz FOOT-bawl","With he, she or it, add -s or -es to the verb."],
+    ["They are happy","Use “are” with they, we and you","thay ar HAP-ee","Use “am” with I, “is” with he/she/it, and “are” with we/you/they."],
+    ["I went to school yesterday","The past tense of “go” is “went”","eye went too skool YES-ter-day","Irregular verbs change form in the past: go → went."],
+    ["An apple","Use “an” before a vowel sound","an AP-ul","Use “a” before consonant sounds and “an” before vowel sounds."]]}
+};
+const CATS = {vocab:"Vocabulary", phrases:"Phrases", grammar:"Grammar"};
+const TABS = {learn:"Learn", quiz:"Quiz", progress:"Progress"};
+const PKEY = "langapp_v1";
+let lang = "Spanish", cat = "vocab", tab = "learn", idx = 0, shown = false, quiz = null;
+let P = {lessons:0, quizzes:0, best:{}};
+
+const $ = id => document.getElementById(id);
+const el = (t, c, x) => { const e = document.createElement(t); if(c) e.className = c; if(x !== undefined) e.textContent = x; return e; };
+const shuffle = a => { a = a.slice(); for(let i=a.length-1;i>0;i--){ const j = Math.floor(Math.random()*(i+1)); [a[i],a[j]] = [a[j],a[i]]; } return a; };
+function load(){ try{ const r = localStorage.getItem(PKEY); if(r) P = Object.assign(P, JSON.parse(r)); }catch(e){} }
+function save(){ try{ localStorage.setItem(PKEY, JSON.stringify(P)); }catch(e){} }
+function speak(text){ try{ speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(text); u.lang = DATA[lang].code; speechSynthesis.speak(u); }catch(e){} }
+const list = () => DATA[lang][cat];
+function lesson(){ const l = list(), n = Math.min(5, l.length), day = Math.floor(Date.now()/86400000), s = (day*n) % l.length; return Array.from({length:n}, (_,k) => l[(s+k) % l.length]); }
+
+function renderNav(){
+  const sel = $("lang"); if(!sel.options.length) Object.keys(DATA).forEach(k => sel.add(new Option(k, k)));
+  sel.value = lang;
+  const tabs = $("tabs"); tabs.innerHTML = "";
+  Object.entries(TABS).forEach(([k,v]) => { const b = el("button", k===tab?"on":"", v); b.onclick = () => { tab = k; idx = 0; shown = false; quiz = null; render(); }; tabs.append(b); });
+  const chips = $("chips"); chips.innerHTML = "";
+  if(tab !== "progress") Object.entries(CATS).forEach(([k,v]) => { const b = el("button", k===cat?"on":"", v); b.onclick = () => { cat = k; idx = 0; shown = false; quiz = null; render(); }; chips.append(b); });
+}
+
+function renderLearn(v){
+  const L = lesson(), it = L[idx];
+  const bar = el("div","bar"), f = el("div"); f.style.width = ((idx+1)/L.length*100)+"%"; bar.append(f);
+  v.append(el("div","count",`Today's ${CATS[cat]} lesson · Card ${idx+1} of ${L.length}`), bar);
+  const c = el("div","card");
+  c.append(el("div","label", lang), el("div","word", it[0]), el("div","pron", "🔊 "+it[2]));
+  const sp = el("button","","▶ Listen"); sp.onclick = () => speak(it[0]); c.append(sp);
+  if(shown){ c.append(el("div","tr", it[1])); if(it[3]) c.append(el("div","tip","💡 "+it[3])); }
+  v.append(c);
+  const r = el("div","row");
+  const pv = el("button","","← Previous"); pv.disabled = idx===0; pv.onclick = () => { idx--; shown = false; render(); };
+  const noun = lang === "English" ? "Meaning" : "Translation";
+  const sh = el("button","primary", (shown?"Hide ":"Show ")+noun); sh.onclick = () => { shown = !shown; render(); };
+  const last = idx === L.length-1;
+  const nx = el("button","", last?"Finish ✓":"Next →");
+  nx.onclick = () => { if(last){ P.lessons++; save(); idx = 0; shown = false; tab = "progress"; render(); } else { idx++; shown = false; render(); } };
+  r.append(pv, sh, nx); v.append(r);
+}
+
+function startQuiz(){
+  const l = list();
+  const qs = shuffle(l).slice(0, 5).map(it => {
+    const wrong = shuffle(l.filter(x => x !== it)).slice(0,3).map(x => x[1]);
+    return {it, opts: shuffle([it[1], ...wrong]), ans: it[1]};
+  });
+  quiz = {qs, i:0, score:0, picked:null};
+}
+
+function renderQuiz(v){
+  if(!quiz){
+    const c = el("div","card center");
+    c.append(el("div","label","Practice test"), el("div","word","5 questions"), el("p","muted",`Choose the correct meaning. Category: ${CATS[cat]} (${lang}).`));
+    const b = el("button","primary","Start Quiz"); b.onclick = () => { startQuiz(); render(); }; c.append(b); v.append(c); return;
+  }
+  if(quiz.i >= quiz.qs.length){
+    const key = lang+"|"+cat, total = quiz.qs.length;
+    const c = el("div","card center");
+    c.append(el("div","label","Quiz complete"), el("div","big",`${quiz.score} / ${total}`),
+      el("p","muted", quiz.score===total ? "Perfect score! 🎉" : quiz.score>=total/2 ? "Good job, keep practising!" : "Review the lesson and try again."));
+    const again = el("button","primary","Try Again"); again.onclick = () => { startQuiz(); render(); }; c.append(again); v.append(c); return;
+  }
+  const q = quiz.qs[quiz.i];
+  v.append(el("div","count",`Question ${quiz.i+1} of ${quiz.qs.length} · Score ${quiz.score}`));
+  const c = el("div","card");
+  c.append(el("div","label","What does this mean?"), el("div","word", q.it[0]), el("div","pron","🔊 "+q.it[2]));
+  const sp = el("button","","▶ Listen"); sp.onclick = () => speak(q.it[0]); c.append(sp);
+  q.opts.forEach(o => {
+    let cls = "opt";
+    if(quiz.picked !== null){ if(o === q.ans) cls += " right"; else if(o === quiz.picked) cls += " wrong"; }
+    const b = el("button", cls, o); b.disabled = quiz.picked !== null;
+    b.onclick = () => { quiz.picked = o; if(o === q.ans) quiz.score++; render(); };
+    c.append(b);
+  });
+  v.append(c);
+  if(quiz.picked !== null){
+    const last = quiz.i === quiz.qs.length-1;
+    const n = el("button","primary", last?"See Result":"Next Question");
+    n.onclick = () => {
+      if(last){ const key = lang+"|"+cat; P.quizzes++; if(!(key in P.best) || quiz.score > P.best[key]) P.best[key] = quiz.score; save(); }
+      quiz.i++; quiz.picked = null; render();
+    };
+    v.append(n);
+  }
+}
+
+function renderProgress(v){
+  const c = el("div","card");
+  c.append(el("div","label","Your progress"));
+  [["Lessons completed", P.lessons],["Quizzes taken", P.quizzes]].forEach(([a,b]) => { const s = el("div","stat"); s.append(el("span","",a), el("b","",b)); c.append(s); });
+  v.append(c);
+  const c2 = el("div","card"); c2.append(el("div","label","Best quiz scores"));
+  const keys = Object.keys(P.best);
+  if(!keys.length) c2.append(el("div","muted","No quizzes taken yet. Try the Quiz tab!"));
+  keys.forEach(k => { const [lg, ct] = k.split("|"); const s = el("div","stat"); s.append(el("span","",`${lg} · ${CATS[ct]}`), el("b","",`${P.best[k]} / 5`)); c2.append(s); });
+  v.append(c2);
+  const r = el("button","","Reset progress"); r.onclick = () => { if(confirm("Reset all progress?")){ P = {lessons:0, quizzes:0, best:{}}; save(); render(); } };
+  v.append(r);
+}
+
+function render(){
+  renderNav();
+  const v = $("view"); v.innerHTML = "";
+  if(tab === "learn") renderLearn(v); else if(tab === "quiz") renderQuiz(v); else renderProgress(v);
+}
+
+$("lang").onchange = e => { lang = e.target.value; idx = 0; shown = false; quiz = null; render(); };
+load(); render();
+</script>
+</body>
+</html>
